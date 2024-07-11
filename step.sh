@@ -240,10 +240,21 @@ fi
 echo_details "$submit_cmd"
 echo
 
-eval "${submit_cmd}"
+max_retries=3
+retry_delay=5
 
-if [ $? -eq 0 ] ; then
-    echo_done "Success"
-else
-    echo_fail "Fail"
-fi
+for ((i=1; i<=max_retries; i++)); do
+    if eval "${submit_cmd}"; then
+        echo_done "Success"
+        exit 0
+    else
+        if [ $i -lt $max_retries ]; then
+            echo_warn "Attempt $i failed. Retrying in $retry_delay seconds..."
+            sleep $retry_delay
+        else
+            echo_fail "All $max_retries attempts failed. Exiting."
+        fi
+    fi
+done
+
+echo_fail "Failed to deploy build to Firebase after $max_retries attempts."
